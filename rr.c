@@ -181,32 +181,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    // if process is just starting
-    if (!curr->started) {
-      curr->started = true;
-      curr->start_time = t;
-      total_response_time += t - curr->arrival_time;
-    }
-
-    time_slot++;
-    t++;
-    
-    // remove process once finished
-    curr->remaining_time--;
-    if (curr->remaining_time == 0) {
-      done++;
-      printf("process %d arrived at ", curr->pid);
-      printf("%d and finished at ", curr->arrival_time);
-      printf("%d\n", t);
-      total_waiting_time += t - curr->arrival_time - curr->burst_time;
-      struct process *tmp = curr;
-      curr = TAILQ_NEXT(tmp, pointers);
-      TAILQ_REMOVE(&list, tmp, pointers);
-      time_slot = 0;
-    }
-
-    // time slot is up, so move to next process
-    else if (time_slot == quantum_length) {
+    if (time_slot == quantum_length) {
       time_slot = 0;
       struct process *tmp = curr;
       curr = TAILQ_NEXT(tmp, pointers);
@@ -216,6 +191,42 @@ int main(int argc, char *argv[])
       TAILQ_REMOVE(&list, tmp, pointers);
       TAILQ_INSERT_TAIL(&list, tmp, pointers);
     }
+
+    // if process is just starting
+    if (!curr->started) {
+      curr->started = true;
+      curr->start_time = t;
+      total_response_time += t - curr->arrival_time;
+    }
+
+    printf("running process %d\n", curr->pid);
+    time_slot++;
+    t++;
+
+    // remove process once finished
+    curr->remaining_time--;
+    if (curr->remaining_time == 0) {
+      done++;
+      // printf("process %d arrived at ", curr->pid);
+      // printf("%d and finished at ", curr->arrival_time);
+      total_waiting_time += t - curr->arrival_time - curr->burst_time;
+      struct process *tmp = curr;
+      curr = TAILQ_NEXT(tmp, pointers);
+      TAILQ_REMOVE(&list, tmp, pointers);
+      time_slot = 0;
+    }
+
+    // time slot is up, so move to next process
+    // else if (time_slot == quantum_length) {
+    //   time_slot = 0;
+    //   struct process *tmp = curr;
+    //   curr = TAILQ_NEXT(tmp, pointers);
+    //   if (curr == NULL) {
+    //     curr = TAILQ_FIRST(&list);
+    //   }
+    //   TAILQ_REMOVE(&list, tmp, pointers);
+    //   TAILQ_INSERT_TAIL(&list, tmp, pointers);
+    // }
     // TAILQ_FOREACH(p, &list, pointers) {
     //   if (p->started || p->arrival_time <= t) {
     //     if (!p->started) {
