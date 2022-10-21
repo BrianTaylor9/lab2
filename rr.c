@@ -24,7 +24,6 @@ struct process {
   u32 waiting_time;
   u32 start_time;
   bool started;
-
   /* End of "Additional fields here" */
 };
 
@@ -150,13 +149,11 @@ int main(int argc, char *argv[])
   u32 t = 0;
   int done = 0;
   struct process *p;
-
-
   u32 first_arrival = 10000000;
   struct process *first_proc;
+  bool none_waiting = true;
 
   for (int i = 0; i < size; i++) {
-    
     // initialize processes
     p = &data[i];
     p->started = false;
@@ -168,84 +165,76 @@ int main(int argc, char *argv[])
       first_proc = &data[i];
     }
   }
+  // set first process as head
   TAILQ_INSERT_HEAD(&list, first_proc, pointers);
   struct process *curr = first_proc;
   u32 time_slot = 0;
+  if (first_proc->arrival_time == 0) {
+    none_waiting = false;
+  }
 
+  // continue until all process finish
   while (done < size) {
-
     // check for newly-arrived processes
     for (int i = 0; i < size; i++) {
       if (data[i].arrival_time == t && &data[i] != first_proc) {
-        TAILQ_INSERT_TAIL(&list, &data[i], pointers);
+        if (none_waiting) {
+          TAILQ_INSERT_HEAD(&list, &data[i], pointers);
+          none_waiting = false;
+          curr = TAILQ_FIRST(&list);
+          time_slot = 0;
+        }
+        else {
+          TAILQ_INSERT_TAIL(&list, &data[i], pointers);
+        }
       }
+    }
+
+    if (none_waiting) {
+      t++;
+      continue;
     }
 
     if (time_slot == quantum_length) {
       time_slot = 0;
       struct process *tmp = curr;
-      curr = TAILQ_NEXT(tmp, pointers);
+      if (tmp != NULL) {
+        curr = TAILQ_NEXT(tmp, pointers);
+      }
       if (curr == NULL) {
         curr = TAILQ_FIRST(&list);
       }
-      TAILQ_REMOVE(&list, tmp, pointers);
-      TAILQ_INSERT_TAIL(&list, tmp, pointers);
+      if (tmp != NULL) {
+        TAILQ_REMOVE(&list, tmp, pointers);
+        TAILQ_INSERT_TAIL(&list, tmp, pointers);
+      }
     }
 
     // if process is just starting
-    if (!curr->started) {
+    if (curr != NULL && !curr->started) {
       curr->started = true;
       curr->start_time = t;
       total_response_time += t - curr->arrival_time;
     }
 
-    printf("running process %d\n", curr->pid);
     time_slot++;
     t++;
 
+    if (curr != NULL) {
+      curr->remaining_time--;
+    }
     // remove process once finished
-    curr->remaining_time--;
-    if (curr->remaining_time == 0) {
+    if (curr != NULL && curr->remaining_time == 0) {
       done++;
-      // printf("process %d arrived at ", curr->pid);
-      // printf("%d and finished at ", curr->arrival_time);
       total_waiting_time += t - curr->arrival_time - curr->burst_time;
       struct process *tmp = curr;
       curr = TAILQ_NEXT(tmp, pointers);
       TAILQ_REMOVE(&list, tmp, pointers);
       time_slot = 0;
+      if (TAILQ_EMPTY(&list)) {
+        none_waiting = true;
+      }
     }
-
-    // time slot is up, so move to next process
-    // else if (time_slot == quantum_length) {
-    //   time_slot = 0;
-    //   struct process *tmp = curr;
-    //   curr = TAILQ_NEXT(tmp, pointers);
-    //   if (curr == NULL) {
-    //     curr = TAILQ_FIRST(&list);
-    //   }
-    //   TAILQ_REMOVE(&list, tmp, pointers);
-    //   TAILQ_INSERT_TAIL(&list, tmp, pointers);
-    // }
-    // TAILQ_FOREACH(p, &list, pointers) {
-    //   if (p->started || p->arrival_time <= t) {
-    //     if (!p->started) {
-    //       p->started = true;
-    //       p->start_time = t;
-    //       total_response_time += t - p->arrival_time;
-    //     }
-    //     int passed = (((p->remaining_time) < (quantum_length)) ? (p->remaining_time) : (quantum_length));
-    //     t += passed;
-    //     p->remaining_time -= passed;
-    //     printf("%d ran for ", p->pid);
-    //     printf("%d seconds\n", passed);
-    //     if (p->remaining_time == 0) {
-    //       done++;
-    //       total_waiting_time += t - p->arrival_time - p->burst_time;
-    //       TAILQ_REMOVE(&list, p, pointers);
-    //     }
-    //   }
-    // }
   }
   /* End of "Your code here" */
 
