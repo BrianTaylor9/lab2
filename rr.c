@@ -190,8 +190,6 @@ int main(int argc, char *argv[])
       }
     }
 
-    printf("time %d: ", t);
-
     // continue to next time unit if no processes are running
     if (none_waiting) {
       t++;
@@ -224,7 +222,6 @@ int main(int argc, char *argv[])
     time_slot++;
     t++;
 
-    printf("running process %d\n", curr->pid);
     if (curr != NULL) {
       curr->remaining_time--;
     }
