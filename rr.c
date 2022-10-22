@@ -190,11 +190,15 @@ int main(int argc, char *argv[])
       }
     }
 
+    printf("time %d: ", t);
+
+    // continue to next time unit if no processes are running
     if (none_waiting) {
       t++;
       continue;
     }
 
+    // run next process if quantum length has been reached
     if (time_slot == quantum_length) {
       time_slot = 0;
       struct process *tmp = curr;
@@ -220,6 +224,7 @@ int main(int argc, char *argv[])
     time_slot++;
     t++;
 
+    printf("running process %d\n", curr->pid);
     if (curr != NULL) {
       curr->remaining_time--;
     }
